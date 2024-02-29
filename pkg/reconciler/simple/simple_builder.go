@@ -3,6 +3,7 @@ package simple
 import (
 	"context"
 	"github.com/ethan-gallant/maestro/api"
+	"github.com/ethan-gallant/maestro/pkg/reconciler"
 	"github.com/google/go-cmp/cmp"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -36,7 +37,7 @@ func (b *Builder[Parent, Child]) WithNoReference(noReference bool) *Builder[Pare
 }
 
 // WithDryRunType configures the dry-run behavior of the reconciler.
-func (b *Builder[Parent, Child]) WithDryRunType(dryRunType DryRunType) *Builder[Parent, Child] {
+func (b *Builder[Parent, Child]) WithDryRunType(dryRunType reconciler.DryRunType) *Builder[Parent, Child] {
 	b.reconciler.DryRunType = dryRunType
 	return b
 }
