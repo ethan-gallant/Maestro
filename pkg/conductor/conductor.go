@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-type Director[Parent client.Object] struct {
+type Conductor[Parent client.Object] struct {
 	client      client.Client
 	ctx         context.Context
 	parent      Parent
@@ -17,12 +17,14 @@ type Director[Parent client.Object] struct {
 	reconcilers []api.Reconciler[Parent]
 }
 
-func (d *Director[Parent]) Register(reconciler api.Reconciler[Parent]) api.Conductor[Parent] {
+var _ api.Conductor[client.Object] = &Conductor[client.Object]{}
+
+func (d *Conductor[Parent]) Register(reconciler api.Reconciler[Parent]) api.Conductor[Parent] {
 	d.reconcilers = append(d.reconcilers, reconciler)
 	return d
 }
 
-func (d *Director[Parent]) Conduct(parent Parent) (reconcile.Result, error) {
+func (d *Conductor[Parent]) Conduct(parent Parent) (reconcile.Result, error) {
 	d.parent = parent
 	for _, reconciler := range d.reconcilers {
 		result, err := d.Reconcile(reconciler)
@@ -33,10 +35,8 @@ func (d *Director[Parent]) Conduct(parent Parent) (reconcile.Result, error) {
 	return reconcile.Result{}, nil
 }
 
-var _ api.Conductor[client.Object] = &Director[client.Object]{}
-
-// Reconcile takes a reconciler and invokes its Reconcile method, providing the necessary dependencies.
-func (d *Director[Parent]) Reconcile(
+// Reconcile takes a single reconciler and invokes its Reconcile method, providing the necessary dependencies.
+func (d *Conductor[Parent]) Reconcile(
 	// Any type for the second arg
 	reconciler api.Reconciler[Parent],
 ) (reconcile.Result, error) {

@@ -35,8 +35,8 @@ func (b *Builder[Parent]) WithLogger(l klog.Logger) *Builder[Parent] {
 	return b
 }
 
-func (b *Builder[Parent]) Build() *Director[Parent] {
-	return &Director[Parent]{
+func (b *Builder[Parent]) Build() *Conductor[Parent] {
+	return &Conductor[Parent]{
 		client: b.client,
 		ctx:    b.ctx,
 		parent: b.parent,

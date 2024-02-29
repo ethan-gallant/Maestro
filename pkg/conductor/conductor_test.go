@@ -55,7 +55,7 @@ func TestDirector(t *testing.T) {
 		Build()
 
 	if director.client != mockClient || director.parent != mockParent {
-		t.Errorf("NewDirectorFor did not correctly initialize Director")
+		t.Errorf("NewDirectorFor did not correctly initialize Conductor")
 	}
 
 	mockReconciler := &MockReconciler[*corev1.Pod]{}
