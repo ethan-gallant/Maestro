@@ -27,8 +27,7 @@ func (d *Conductor[Parent]) Register(reconciler api.Reconciler[Parent]) api.Cond
 func (d *Conductor[Parent]) Conduct(parent Parent) (reconcile.Result, error) {
 	d.parent = parent
 	for _, reconciler := range d.reconcilers {
-		result, err := d.Reconcile(reconciler)
-		if err != nil {
+		if result, err := d.Reconcile(reconciler); shouldReturn(result, err) {
 			return result, err
 		}
 	}
@@ -41,4 +40,8 @@ func (d *Conductor[Parent]) Reconcile(
 	reconciler api.Reconciler[Parent],
 ) (reconcile.Result, error) {
 	return reconciler.Reconcile(d.ctx, d.client, d.parent)
+}
+
+func shouldReturn(result reconcile.Result, err error) bool {
+	return err != nil || result.Requeue || result.RequeueAfter > 0
 }

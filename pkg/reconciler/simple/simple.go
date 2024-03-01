@@ -14,37 +14,77 @@ import (
 
 // Reconciler (SimpleReconciler) is a simple reconciler that reconciles a child object for a parent object.
 type Reconciler[Parent client.Object, Child client.Object] struct {
-	// ReconcileFn is the function that reconciles the child object.
-	// It should return the child object and an error if it fails for some reason.
-	ReconcileFn func(ctx context.Context, parent Parent) (Child, error)
-	// Predicate is a function that returns true if the child should be reconciled.
-	Predicate func(parent Parent) bool
-	// NoReference optionally disables setting the owner reference on the child object.
-	NoReference bool
-	// DryRunType configures the dry-run behavior of the reconciler.
-	DryRunType reconciler.DryRunType
-	// CompareOpts are the options to use when comparing the child object to the desired state.
-	// This helps avoid unnecessary updates when the child object is already in the desired state.
-	CompareOpts []cmp.Option
 	// Details is the descriptor for the reconciler.
 	// It should contain the name and description of the reconciler for documentation and debugging purposes.
-	Details api.Descriptor
+	Details api.Descriptor // required
+	// ReconcileFn is the function that reconciles the Child object.
+	// The ReconcileFn accepts a Parent object, and returns the desired state of the Child object, or an error.
+	ReconcileFn func(ctx context.Context, parent Parent) (Child, error) // required
+	// PredicateFn is a function that returns true if the ReconcileFn should be called.
+	// If nil, the ReconcileFn will always be called.
+	PredicateFn func(parent Parent) bool // optional
+	// NoReference optionally disables setting the owner reference on the child object.
+	NoReference bool // optional
+	// DryRunType configures the dry-run behavior of the reconciler.
+	DryRunType reconciler.DryRunType // optional
+	// CompareOpts are the options to use when comparing the child object to the desired state.
+	// This helps avoid unnecessary updates when the child object is already in the desired state.
+	CompareOpts []cmp.Option // optional
+	// ShouldDeleteFn is a function that if returns true, the child object will be deleted.
+	// It is called regardless of the PredicateFn function. If no function is provided, the child object will never be deleted.
+	ShouldDeleteFn func(Parent) bool // optional
+	// ChildKeyFn returns the child object with only a key (name and namespace) set.
+	// It must always match the key the ReconcileFn returns. Otherwise, Reconcile calls will fail.
+	// All other fields should be empty and will be ignored.
+	ChildKeyFn func(Parent) Child // required if ShouldDeleteFn is set
 }
 
 var _ api.Reconciler[client.Object] = &Reconciler[client.Object, client.Object]{}
 
 // Reconcile method for SimpleReconciler calls the embedded ChildReconciler's Reconcile method and handles the child object.
 func (r *Reconciler[Parent, Child]) Reconcile(ctx context.Context, k8sCli client.Client, parent Parent) (reconcile.Result, error) {
-	if r.Predicate != nil && !r.Predicate(parent) {
-		return reconcile.Result{}, nil
+	log := klog.FromContext(ctx).V(1).
+		WithValues("parent", client.ObjectKeyFromObject(parent))
+
+	var childKey client.ObjectKey
+	if r.ShouldDeleteFn != nil {
+		current := r.ChildKeyFn(parent)
+		childKey = client.ObjectKeyFromObject(current)
+		if err := k8sCli.Get(ctx, client.ObjectKeyFromObject(current), current); err == nil && r.ShouldDeleteFn(parent) {
+			if err := k8sCli.Delete(ctx, current); err != nil {
+				return reconcile.Result{}, err
+			}
+			log.Info("deleted child")
+			return reconcile.Result{
+				Requeue: true,
+			}, nil
+		} else if !apierrors.IsNotFound(err) {
+			return reconcile.Result{}, err
+		}
 	}
 
-	log := klog.FromContext(ctx).V(1).
-		WithValues("parent", parent.GetName(), "namespace", parent.GetNamespace())
+	if r.PredicateFn != nil && !r.PredicateFn(parent) {
+		return reconcile.Result{}, nil
+	}
 
 	desired, err := r.ReconcileFn(ctx, parent)
 	if err != nil {
 		return reconcile.Result{}, err
+	}
+
+	if r.ChildKeyFn != nil {
+		// Backfill the name and namespace if not already set by the ReconcileFn
+		if desired.GetName() == "" {
+			desired.SetName(childKey.Name)
+		}
+		if desired.GetNamespace() == "" {
+			desired.SetNamespace(childKey.Namespace)
+		}
+
+		// Error if the there's a mismatch between the key and the object returned by ReconcileFn
+		if childKey.Namespace != desired.GetNamespace() || childKey.Name != desired.GetName() {
+			return reconcile.Result{}, reconciler.ErrChildKeyMismatch
+		}
 	}
 
 	key := client.ObjectKeyFromObject(desired)
@@ -56,8 +96,9 @@ func (r *Reconciler[Parent, Child]) Reconcile(ctx context.Context, k8sCli client
 		}
 	}
 
-	// Use a copy of the existin object for type-inference, properties/fields are replaced by Get() below.
+	// Fetch the current object, if not already set from ShouldDeleteFn.
 	current := desired.DeepCopyObject().(Child)
+
 	if err := k8sCli.Get(ctx, key, current); err != nil {
 		// Allow only not-found errors, any other error is a problem.
 		if !apierrors.IsNotFound(err) {

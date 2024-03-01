@@ -24,9 +24,9 @@ func FromReconcileFunc[Parent client.Object, Child client.Object](fn ReconcileFn
 	}
 }
 
-// WithPredicate sets the Predicate field.
-func (b *Builder[Parent, Child]) WithPredicate(predicate func(parent Parent) bool) *Builder[Parent, Child] {
-	b.reconciler.Predicate = predicate
+// WithPredicateFn sets the PredicateFn field.
+func (b *Builder[Parent, Child]) WithPredicateFn(predicate func(parent Parent) bool) *Builder[Parent, Child] {
+	b.reconciler.PredicateFn = predicate
 	return b
 }
 
@@ -51,6 +51,16 @@ func (b *Builder[Parent, Child]) AddCompareOpt(compareOpts []cmp.Option) *Builde
 // WithDetails sets the Details field.
 func (b *Builder[Parent, Child]) WithDetails(details api.Descriptor) *Builder[Parent, Child] {
 	b.reconciler.Details = details
+	return b
+}
+
+func (b *Builder[Parent, Child]) WithShouldDeleteFn(shouldDeleteFn func(Parent) bool) *Builder[Parent, Child] {
+	b.reconciler.ShouldDeleteFn = shouldDeleteFn
+	return b
+}
+
+func (b *Builder[Parent, Child]) WithChildKeyFn(childKeyFn func(Parent) Child) *Builder[Parent, Child] {
+	b.reconciler.ChildKeyFn = childKeyFn
 	return b
 }
 
