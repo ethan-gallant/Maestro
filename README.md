@@ -43,32 +43,34 @@ go get github.com/ethan-gallant/maestro
 Here's a minimal example of how to use the Simple Reconciler package to reconcile a child object for a parent object:
 
 ```go
+package main
+
 import (
-"context"
-"github.com/ethan-gallant/maestro/pkg/reconciler/simple"
-appsv1 "k8s.io/api/apps/v1"
-corev1 "k8s.io/api/core/v1"
-metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"context"
+	"github.com/ethan-gallant/maestro/pkg/reconciler/simple"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func podReconcileFunc(ctx context.Context, deployment *appsv1.Deployment) (*corev1.Pod, error) {
-return &corev1.Pod{
-ObjectMeta: metav1.ObjectMeta{
-Name:      deployment.Name + "-pod",
-Namespace: deployment.Namespace,
-Labels:    deployment.Spec.Template.Labels,
-},
-Spec: deployment.Spec.Template.Spec,
-}, nil
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      deployment.Name + "-pod",
+			Namespace: deployment.Namespace,
+			Labels:    deployment.Spec.Template.Labels,
+		},
+		Spec: deployment.Spec.Template.Spec,
+	}, nil
 }
 
 func newPodReconciler() *simple.Reconciler[*appsv1.Deployment, *corev1.Pod] {
-return simple.FromReconcileFunc(podReconcileFunc).
-WithDetails(api.Descriptor{
-Name:        "PodReconciler",
-Description: "Reconciles Pod for Deployment",
-}).
-Build()
+	return simple.FromReconcileFunc(podReconcileFunc).
+		WithDetails(api.Descriptor{
+			Name:        "PodReconciler",
+			Description: "Reconciles Pod for Deployment",
+		}).
+		Build()
 }
 ```
 

@@ -1,6 +1,8 @@
 # Contributing to Maestro 🎼
 
-First off, thank you for considering contributing to Maestro! We appreciate your interest and support. This document provides a set of guidelines for contributing to the project. By following these guidelines, you can help us maintain a collaborative and welcoming environment for all contributors.
+First off, thank you for considering contributing to Maestro! We appreciate your interest and support. This document
+provides a set of guidelines for contributing to the project. By following these guidelines, you can help us maintain a
+collaborative and welcoming environment for all contributors.
 
 ## Getting Started 🚀
 
@@ -25,7 +27,8 @@ If you find a bug, please open an issue on the GitHub repository. When reporting
 
 ### Suggesting Enhancements 💡
 
-If you have an idea for an enhancement or a new feature, please open an issue on the GitHub repository. When suggesting an enhancement, please include:
+If you have an idea for an enhancement or a new feature, please open an issue on the GitHub repository. When suggesting
+an enhancement, please include:
 
 - A clear and descriptive title
 - A detailed description of the proposed enhancement
@@ -52,11 +55,13 @@ To set up the development environment for Maestro, follow these steps:
 
 ## Code Style 🎨
 
-Please follow the existing code style and conventions used in the project. We use [gofmt](https://golang.org/cmd/gofmt/) to format the code.
+Please follow the existing code style and conventions used in the project. We use [gofmt](https://golang.org/cmd/gofmt/)
+to format the code.
 
 ## Testing 🧪
 
-When contributing code changes, please include appropriate tests to ensure the correctness and reliability of the code. Run the tests using the following command:
+When contributing code changes, please include appropriate tests to ensure the correctness and reliability of the code.
+Run the tests using the following command:
 
 ```shell
 go test ./...
@@ -64,4 +69,5 @@ go test ./...
 
 ## Documentation 📚
 
-If your changes require updates to the documentation, please make the necessary changes in the relevant Markdown files or code comments.
+If your changes require updates to the documentation, please make the necessary changes in the relevant Markdown files
+or code comments.
