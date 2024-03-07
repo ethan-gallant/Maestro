@@ -2,13 +2,18 @@ package simple
 
 import (
 	"context"
+	"fmt"
+	"time"
+
 	"github.com/ethan-gallant/maestro/api"
+	"github.com/ethan-gallant/maestro/pkg/conductor"
 	"github.com/ethan-gallant/maestro/pkg/reconciler"
 	"github.com/google/go-cmp/cmp"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	klog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -43,6 +48,52 @@ var _ api.Reconciler[client.Object] = &Reconciler[client.Object, client.Object]{
 
 // Reconcile method for SimpleReconciler calls the embedded ChildReconciler's Reconcile method and handles the child object.
 func (r *Reconciler[Parent, Child]) Reconcile(ctx context.Context, k8sCli client.Client, parent Parent) (reconcile.Result, error) {
+	state, err := conductor.FetchState(ctx)
+	if err != nil { // With no state / conductor, do a normal reconcile
+		return r.doReconcile(ctx, k8sCli, parent)
+	}
+
+	result, err := r.doReconcile(ctx, k8sCli, parent)
+	if err != nil {
+		state.AddCondition(metav1.Condition{
+			Type:    fmt.Sprintf("%sError", r.Details.Name),
+			Status:  metav1.ConditionTrue,
+			Reason:  "ReconcileError",
+			Message: err.Error(),
+			LastTransitionTime: metav1.Time{
+				Time: time.Now(),
+			},
+		})
+
+		return result, err
+	}
+
+	state.AddCondition(metav1.Condition{
+		Type:    fmt.Sprintf("%sReconciled", r.Details.Name),
+		Status:  conditionFromResult(result),
+		Reason:  "Reconciled",
+		Message: "Reconciled successfully",
+		LastTransitionTime: metav1.Time{
+			Time: time.Now(),
+		},
+	})
+
+	return result, nil
+}
+
+// Describe returns the descriptor for the reconciler.
+func (r *Reconciler[Parent, Child]) Describe() api.Descriptor {
+	return r.Details
+}
+
+func conditionFromResult(result reconcile.Result) metav1.ConditionStatus {
+	if result.Requeue || result.RequeueAfter > 0 {
+		return metav1.ConditionFalse
+	}
+	return metav1.ConditionTrue
+}
+
+func (r *Reconciler[Parent, Child]) doReconcile(ctx context.Context, k8sCli client.Client, parent Parent) (reconcile.Result, error) {
 	log := klog.FromContext(ctx).V(1).
 		WithValues("parent", client.ObjectKeyFromObject(parent))
 
@@ -171,9 +222,4 @@ func (r *Reconciler[Parent, Child]) Reconcile(ctx context.Context, k8sCli client
 	return reconcile.Result{
 		Requeue: true,
 	}, nil
-}
-
-// Describe returns the descriptor for the reconciler.
-func (r *Reconciler[Parent, Child]) Describe() api.Descriptor {
-	return r.Details
 }
