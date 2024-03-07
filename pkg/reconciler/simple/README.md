@@ -15,7 +15,7 @@ the overall development experience.
 - Enables dry-run mode for avoiding unnecessary requeues and optimizing performance
 - Allows customization of object comparison options to avoid unnecessary updates
 - Supports deletion of child objects based on custom conditions
-- Integrates with the [Conductor package](https://github.com/ethan-gallant/maestro/tree/main/pkg/conductor) for advanced
+- Integrates with the [Conductor package](https://github.com/ethan-gallant/maestro/tree/master/pkg/conductor) for advanced
   status condition handling
 
 ## Usage
@@ -57,13 +57,13 @@ To use the Simple Reconciler package, follow these steps:
    ```
 
 6. Use the built reconciler in your [controller](https://kubernetes.io/docs/concepts/architecture/controller/)
-   or [conductor](https://github.com/ethan-gallant/maestro/tree/main/pkg/conductor) to reconcile the child object for
+   or [conductor](https://github.com/ethan-gallant/maestro/tree/master/pkg/conductor) to reconcile the child object for
    the parent object.
 
 ## Integration with Conductor Package
 
 The Simple Reconciler package seamlessly integrates with
-the [Conductor package](https://github.com/ethan-gallant/maestro/tree/main/pkg/conductor) to provide advanced status
+the [Conductor package](https://github.com/ethan-gallant/maestro/tree/master/pkg/conductor) to provide advanced status
 condition handling. When used within a conductor, the reconciler automatically updates the status conditions of the
 parent object based on the reconciliation result.
 
@@ -224,7 +224,7 @@ When using the Simple Reconciler package, consider the following best practices:
    enhance documentation and debugging.
 
 7. Handle errors gracefully and use the status condition handling capabilities of
-   the [Conductor package](https://github.com/ethan-gallant/maestro/tree/main/pkg/conductor) to propagate reconciliation
+   the [Conductor package](https://github.com/ethan-gallant/maestro/tree/master/pkg/conductor) to propagate reconciliation
    status to the parent object.
 
 8. Consider using the `WithShouldDeleteFn` and `WithChildKeyFn` methods to handle the deletion of child objects based on
