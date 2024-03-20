@@ -109,7 +109,7 @@ func (r *Reconciler[Parent, Child]) doReconcile(ctx context.Context, k8sCli clie
 			return reconcile.Result{
 				Requeue: true,
 			}, nil
-		} else if !apierrors.IsNotFound(err) {
+		} else if err != nil && !apierrors.IsNotFound(err) {
 			return reconcile.Result{}, err
 		}
 	}
