@@ -201,14 +201,14 @@ func (r *Reconciler[Parent, Child]) doReconcile(ctx context.Context, k8sCli clie
 
 		// When removing after kubernetes/kubernetes/pull/121167 is resolved, swap the currentHack with current
 		if cmp.Equal(currentHack, desiredCopy, compareOpts...) {
-			return reconcile.Result{}, nil
-		} else {
 			// Log the diff, user should update the object returned by ReconcileFn to include the changes.
-			// Or to ignore annotations like the deployment controller does.
-			diff := cmp.Diff(currentHack, desiredCopy, compareOpts...)
+			// Or to ignore annotations like those added by the deployment controller.
 			if r.DryRunType == reconciler.DryRunWarn {
+				diff := cmp.Diff(currentHack, desiredCopy, compareOpts...)
 				log.Info("no changes after dry-run. Please update CompareOpts or add the API defaults to the object", "diff", diff)
 			}
+
+			return reconcile.Result{}, nil
 		}
 	}
 
