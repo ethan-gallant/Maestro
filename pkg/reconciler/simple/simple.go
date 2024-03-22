@@ -172,11 +172,12 @@ func (r *Reconciler[Parent, Child]) doReconcile(ctx context.Context, k8sCli clie
 	// This makes an easier and safer check for changes.
 	desired.SetResourceVersion(current.GetResourceVersion())
 	desired.SetCreationTimestamp(current.GetCreationTimestamp())
+	desired.SetGeneration(current.GetGeneration())
 	desired.SetUID(current.GetUID())
 
 	// We always append the two options IgnoreManagedFields and IgnoreTypeMeta.
 	// This avoids unnecessary updates when the child object is already in the desired state.
-	compareOpts := append(r.CompareOpts, reconciler.IgnoreManagedFields, reconciler.IgnoreTypeMeta)
+	compareOpts := append(r.CompareOpts, reconciler.IgnoreManagedFields(), reconciler.IgnoreTypeMeta(), reconciler.IgnoreStatusFields())
 	if cmp.Equal(current, desired, compareOpts...) {
 		log.Info("no changes", "key", key)
 		return reconcile.Result{}, nil
