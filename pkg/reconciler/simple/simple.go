@@ -42,6 +42,9 @@ type Reconciler[Parent client.Object, Child client.Object] struct {
 	// It must always match the key the ReconcileFn returns. Otherwise, Reconcile calls will fail.
 	// All other fields should be empty and will be ignored.
 	ChildKeyFn func(Parent) Child // required if ShouldDeleteFn is set
+	// PreUpdateFn is a function that is called before the child object is applied.
+	// This function is not called for the first creation of the child object.
+	PreUpdateFn func(ctx context.Context, parent Parent, previous, child Child) error // optional
 }
 
 var _ api.Reconciler[client.Object] = &Reconciler[client.Object, client.Object]{}
@@ -174,6 +177,11 @@ func (r *Reconciler[Parent, Child]) doReconcile(ctx context.Context, k8sCli clie
 	desired.SetCreationTimestamp(current.GetCreationTimestamp())
 	desired.SetGeneration(current.GetGeneration())
 	desired.SetUID(current.GetUID())
+	if r.PreUpdateFn != nil {
+		if err := r.PreUpdateFn(ctx, parent, current, desired); err != nil {
+			return reconcile.Result{}, err
+		}
+	}
 
 	// We always append the two options IgnoreManagedFields and IgnoreTypeMeta.
 	// This avoids unnecessary updates when the child object is already in the desired state.

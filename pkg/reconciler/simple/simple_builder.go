@@ -65,6 +65,11 @@ func (b *Builder[Parent, Child]) WithChildKeyFn(childKeyFn func(Parent) Child) *
 	return b
 }
 
+func (b *Builder[Parent, Child]) WithPreUpdateFn(preUpdateFn func(ctx context.Context, parent Parent, previous, child Child) error) *Builder[Parent, Child] {
+	b.reconciler.PreUpdateFn = preUpdateFn
+	return b
+}
+
 // Build returns the constructed Reconciler.
 func (b *Builder[Parent, Child]) Build() *Reconciler[Parent, Child] {
 	return &b.reconciler
