@@ -21,6 +21,7 @@ func FromReconcileFunc[Parent client.Object, Child client.Object](fn ReconcileFn
 	return &Builder[Parent, Child]{
 		reconciler: Reconciler[Parent, Child]{
 			ReconcileFn: fn,
+			PredicateFn: reconciler.IsNotMarkedForDeletion[Parent],
 		},
 	}
 }
