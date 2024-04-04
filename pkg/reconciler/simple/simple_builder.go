@@ -2,7 +2,9 @@ package simple
 
 import (
 	"context"
+
 	"github.com/ethan-gallant/maestro/api"
+	"github.com/ethan-gallant/maestro/pkg/reconciler"
 	"github.com/google/go-cmp/cmp"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -19,13 +21,15 @@ func FromReconcileFunc[Parent client.Object, Child client.Object](fn ReconcileFn
 	return &Builder[Parent, Child]{
 		reconciler: Reconciler[Parent, Child]{
 			ReconcileFn: fn,
+			PredicateFn: reconciler.IsNotMarkedForDeletion[Parent],
+			DryRunType:  reconciler.DryRunWarn,
 		},
 	}
 }
 
-// WithPredicate sets the Predicate field.
-func (b *Builder[Parent, Child]) WithPredicate(predicate func(parent Parent) bool) *Builder[Parent, Child] {
-	b.reconciler.Predicate = predicate
+// WithPredicateFn sets the PredicateFn field.
+func (b *Builder[Parent, Child]) WithPredicateFn(predicate func(parent Parent) bool) *Builder[Parent, Child] {
+	b.reconciler.PredicateFn = predicate
 	return b
 }
 
@@ -36,7 +40,7 @@ func (b *Builder[Parent, Child]) WithNoReference(noReference bool) *Builder[Pare
 }
 
 // WithDryRunType configures the dry-run behavior of the reconciler.
-func (b *Builder[Parent, Child]) WithDryRunType(dryRunType DryRunType) *Builder[Parent, Child] {
+func (b *Builder[Parent, Child]) WithDryRunType(dryRunType reconciler.DryRunType) *Builder[Parent, Child] {
 	b.reconciler.DryRunType = dryRunType
 	return b
 }
@@ -50,6 +54,21 @@ func (b *Builder[Parent, Child]) AddCompareOpt(compareOpts []cmp.Option) *Builde
 // WithDetails sets the Details field.
 func (b *Builder[Parent, Child]) WithDetails(details api.Descriptor) *Builder[Parent, Child] {
 	b.reconciler.Details = details
+	return b
+}
+
+func (b *Builder[Parent, Child]) WithShouldDeleteFn(shouldDeleteFn func(Parent) bool) *Builder[Parent, Child] {
+	b.reconciler.ShouldDeleteFn = shouldDeleteFn
+	return b
+}
+
+func (b *Builder[Parent, Child]) WithChildKeyFn(childKeyFn func(Parent) Child) *Builder[Parent, Child] {
+	b.reconciler.ChildKeyFn = childKeyFn
+	return b
+}
+
+func (b *Builder[Parent, Child]) WithPreUpdateFn(preUpdateFn func(ctx context.Context, parent Parent, previous, child Child) error) *Builder[Parent, Child] {
+	b.reconciler.PreUpdateFn = preUpdateFn
 	return b
 }
 

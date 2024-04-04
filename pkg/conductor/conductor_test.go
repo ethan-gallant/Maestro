@@ -2,9 +2,10 @@ package conductor
 
 import (
 	"context"
+	"testing"
+
 	"github.com/ethan-gallant/maestro/api"
 	corev1 "k8s.io/api/core/v1"
-	"testing"
 
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,6 +20,8 @@ type MockReconciler[Parent client.Object] struct {
 	Client client.Client
 	Parent Parent
 }
+
+var _ api.Reconciler[client.Object] = &MockReconciler[client.Object]{}
 
 func (m *MockReconciler[Parent]) Describe() api.Descriptor {
 	return api.Descriptor{
@@ -55,11 +58,10 @@ func TestDirector(t *testing.T) {
 		Build()
 
 	if director.client != mockClient || director.parent != mockParent {
-		t.Errorf("NewDirectorFor did not correctly initialize Director")
+		t.Errorf("NewDirectorFor did not correctly initialize Conductor")
 	}
-
 	mockReconciler := &MockReconciler[*corev1.Pod]{}
-	_, err := director.Reconcile(mockReconciler)
+	_, err := director.Reconcile(ctx, mockReconciler)
 	if err != nil {
 		t.Errorf("Reconcile returned an unexpected error: %v", err)
 	}
